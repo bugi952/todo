@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bugi의 To-do List</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1000px;
+      background: white;
+      border-radius: 16px;
+      padding: 20px 24px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .sub {
+      margin: 0 0 20px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    /* 두 칼럼 */
+    .columns {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .column {
+      flex: 1;
+      border-radius: 12px;
+      padding: 14px 14px 18px;
+      border: 1px solid #e5e7eb;
+      box-sizing: border-box;
+    }
+
+    /* ✨ 일상 = 파란 테마 */
+    .column-1 {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+    .column-1 .column-title {
+      color: #1d4ed8;
+    }
+    .column-1 .input-row button {
+      background: #3b82f6;
+    }
+    .column-1 .input-row button:hover {
+      background: #2563eb;
+    }
+
+    /* ✨ 코인 = 초록 테마 */
+    .column-2 {
+      background: #ecfdf3;
+      border-color: #bbf7d0;
+    }
+    .column-2 .column-title {
+      color: #15803d;
+    }
+    .column-2 .input-row button {
+      background: #22c55e;
+    }
+    .column-2 .input-row button:hover {
+      background: #16a34a;
+    }
+
+    .column-title {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .input-row input[type="text"] {
+      flex: 1 1 auto;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input-row input[type="text"]:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.28);
+    }
+
+    .priority-select {
+      flex: 0 0 90px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 13px;
+      background: white;
+    }
+
+    .input-row button {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: none;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    /* ⭐ 리스트 한 줄 배치 — 1열 */
+    .todo-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr !important;
+      gap: 8px;
+    }
+
+    .todo-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px;
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .todo-item.dragging {
+      opacity: 0.5;
+      border-style: dashed;
+    }
+
+    .todo-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      font-size: 16px;
+      color: #9ca3af;
+      user-select: none;
+    }
+
+    .todo-checkbox {
+      cursor: pointer;
+    }
+
+    .todo-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .todo-text {
+      flex: 1;
+      font-size: 13px;
+      word-break: break-all;
+    }
+
+    .todo-item.done .todo-text {
+      text-decoration: line-through;
+      color: #9ca3af;
+    }
+
+    /* 우선순위 배지 */
+    .priority-badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .priority-high { background: #fee2e2; color: #b91c1c; }
+    .priority-medium { background: #fef3c7; color: #b45309; }
+    .priority-low { background: #dcfce7; color: #15803d; }
+
+    .delete-btn {
+      border: none;
+      background: #fee2e2;
+      color: #b91c1c;
+      border-radius: 8px;
+      padding: 3px 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .note-toggle-btn {
+      border: none;
+      background: #e5e7eb;
+      color: #374151;
+      border-radius: 8px;
+      padding: 3px 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .note-area {
+      margin-top: 2px;
+    }
+
+    .note-input {
+      width: 100%;
+      min-height: 40px;
+      resize: vertical;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    .note-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.18);
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 700px) {
+      .columns { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Bugi의 To-do List</h1>
+    <!-- 요청대로 문구 변경 / 간단 설명만 유지 -->
+    <p class="sub">일상 / 코인 두 영역으로 할 일을 관리합니다.</p>
+
+    <div class="columns">
+      <!-- 일상 -->
+      <div class="column column-1">
+        <h2 class="column-title">일상</h2>
+
+        <div class="input-row">
+          <input id="todo-input-1" type="text" placeholder="일상 할 일..." />
+          <select id="priority-select-1" class="priority-select">
+            <option value="상">상</option>
+            <option value="중" selected>중</option>
+            <option value="하">하</option>
+          </select>
+          <button id="add-btn-1">추가</button>
+        </div>
+
+        <ul id="todo-list-1" class="todo-list"></ul>
+      </div>
+
+      <!-- 코인 -->
+      <div class="column column-2">
+        <h2 class="column-title">코인</h2>
+
+        <div class="input-row">
+          <input id="todo-input-2" type="text" placeholder="코인 할 일..." />
+          <select id="priority-select-2" class="priority-select">
+            <option value="상">상</option>
+            <option value="중" selected>중</option>
+            <option value="하">하</option>
+          </select>
+          <button id="add-btn-2">추가</button>
+        </div>
+
+        <ul id="todo-list-2" class="todo-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 우선순위에 따른 배지 색상
+    function getPriorityClass(priority) {
+      if (priority === "상") return "priority-high";
+      if (priority === "하") return "priority-low";
+      return "priority-medium";
+    }
+
+    // 공통 로직을 각 열마다 독립적으로 설정
+    function setupTodoColumn(columnId, storageKey) {
+      const input = document.getElementById(`todo-input-${columnId}`);
+      const addBtn = document.getElementById(`add-btn-${columnId}`);
+      const list = document.getElementById(`todo-list-${columnId}`);
+      const prioritySelect = document.getElementById(`priority-select-${columnId}`);
+
+      function saveTodos() {
+        const data = [];
+        list.querySelectorAll(".todo-item").forEach(item => {
+          const noteInput = item.querySelector(".note-input");
+          data.push({
+            text: item.querySelector(".todo-text").textContent,
+            done: item.classList.contains("done"),
+            priority: item.dataset.priority || "중",
+            note: noteInput.value
+          });
+        });
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      }
+
+      // ⭐ 정렬 기준: 1) 중요도(상>중>하) 2) 미완료→완료
+      function reorderTodos() {
+        const items = Array.from(list.querySelectorAll(".todo-item"));
+
+        function priorityValue(p) {
+          if (p === "상") return 1;
+          if (p === "중") return 2;
+          return 3; // 하 또는 기타
+        }
+
+        items.sort((a, b) => {
+          const pa = priorityValue(a.dataset.priority || "중");
+          const pb = priorityValue(b.dataset.priority || "중");
+
+          // 1) 중요도 우선
+          if (pa !== pb) return pa - pb;
+
+          // 2) 미완료(0) -> 완료(1)
+          const da = a.classList.contains("done") ? 1 : 0;
+          const db = b.classList.contains("done") ? 1 : 0;
+          if (da !== db) return da - db;
+
+          // 3) 같으면 기존 순서 유지
+          return 0;
+        });
+
+        list.innerHTML = "";
+        items.forEach(i => list.appendChild(i));
+      }
+
+      function addTodo(text, done = false, priority = "중", note = "", save = true) {
+        const trimmed = text.trim();
+        if (!trimmed) return;
+
+        const li = document.createElement("li");
+        li.className = "todo-item";
+        li.draggable = true;
+        li.dataset.priority = priority;
+        if (done) li.classList.add("done");
+
+        li.innerHTML = `
+          <div class="todo-top">
+            <span class="drag-handle">↕</span>
+            <input type="checkbox" class="todo-checkbox" ${done ? "checked" : ""} />
+            <div class="todo-main">
+              <span class="todo-text">${trimmed}</span>
+              <span class="priority-badge ${getPriorityClass(priority)}">${priority}</span>
+            </div>
+            <button class="note-toggle-btn">메모</button>
+            <button class="delete-btn">삭제</button>
+          </div>
+          <div class="note-area hidden">
+            <textarea class="note-input" placeholder="메모...">${note || ""}</textarea>
+          </div>
+        `;
+
+        list.appendChild(li);
+        reorderTodos();
+        if (save) saveTodos();
+      }
+
+      function loadTodos() {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        saved.forEach(t => {
+          const priority = t.priority || "중";
+          const note = t.note || "";
+          addTodo(t.text, t.done, priority, note, false);
+        });
+        reorderTodos();
+      }
+
+      // 이벤트 설정
+      addBtn.addEventListener("click", () => {
+        addTodo(input.value, false, prioritySelect.value);
+        input.value = "";
+        input.focus();
+      });
+
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") addBtn.click();
+      });
+
+      list.addEventListener("click", e => {
+        const item = e.target.closest(".todo-item");
+        if (!item) return;
+
+        if (e.target.classList.contains("delete-btn")) {
+          item.remove();
+          saveTodos();
+        }
+
+        if (e.target.classList.contains("note-toggle-btn")) {
+          item.querySelector(".note-area").classList.toggle("hidden");
+        }
+      });
+
+      list.addEventListener("change", e => {
+        if (e.target.classList.contains("todo-checkbox")) {
+          const item = e.target.closest(".todo-item");
+          item.classList.toggle("done", e.target.checked);
+          reorderTodos();
+          saveTodos();
+        }
+      });
+
+      list.addEventListener("input", e => {
+        if (e.target.classList.contains("note-input")) {
+          saveTodos();
+        }
+      });
+
+      // 드래그 앤 드롭 (이 열 안에서만)
+      let draggedItem = null;
+
+      list.addEventListener("dragstart", e => {
+        const item = e.target.closest(".todo-item");
+        if (!item) return;
+
+        if (!e.target.classList.contains("drag-handle")) {
+          e.preventDefault();
+          return;
+        }
+
+        draggedItem = item;
+        item.classList.add("dragging");
+      });
+
+      list.addEventListener("dragend", () => {
+        if (draggedItem) draggedItem.classList.remove("dragging");
+        draggedItem = null;
+        saveTodos();
+      });
+
+      list.addEventListener("dragover", e => {
+        if (!draggedItem) return;
+        e.preventDefault();
+
+        const target = e.target.closest(".todo-item");
+        if (!target || target === draggedItem) return;
+
+        const rect = target.getBoundingClientRect();
+        const offset = e.clientY - rect.top;
+
+        if (offset > rect.height / 2) target.after(draggedItem);
+        else target.before(draggedItem);
+      });
+
+      loadTodos();
+    }
+
+    // 일상 / 코인 각각 독립적인 저장 key 사용
+    setupTodoColumn(1, "todos_daily");
+    setupTodoColumn(2, "todos_coin");
+  </script>
+</body>
+</html>
